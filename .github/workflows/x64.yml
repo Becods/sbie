@@ -72,23 +72,21 @@ jobs:
 
       - name: Sign executable
         env:
-          CODESIGN_PWD: ${{ secrets.PFX_BASE64}}
+          PFX_BASE64: ${{ secrets.PFX_BASE64}}
           CER_CONTENT: ${{ secrets.CER_CONTENT }}
-          PFX_BASE64: ${{ secrets.PFX_PASSWORD}}
-        run: |
-          Set-Content -Path pfx.txt -Value $env:PFX_BASE64
-          certutil -decode pfx.txt cert.pfx
-          Set-Content -Path cert.cer -Value $env:CER_CONTENT
-
-      - name: Sign drv
-        env:
           PFX_PASSWORD: ${{ secrets.PFX_PASSWORD}}
         run: |
-          set dates=%DATE%
-          date 2014/1/1
-          signtool sign /v /ac cert.cer /f cert.pfx /fd SHA1 /p %PFX_PASSWORD% Installer/SbiePlus_x64/SbieDll.dll
-          date %dates%
-          
+          New-Item -ItemType directory -Path certificate
+          Set-Content -Path certificate\certificate.txt -Value $env:PFX_BASE64
+          certutil -decode certificate\certificate.txt certificate\certificate.pfx
+          Set-Content -Path certificate\intermediate.txt -Value $env:CER_CONTENT
+          certutil -decode certificate\intermediate.txt certificate\intermediate.crt
+          $currentTime = Get-Date
+          $date = Get-Date -Year 2014 -Month 1 -Day 1
+          & 'signtool.exe' sign /fd SHA1 /p $env:PFX_PASSWORD /ac certificate\intermediate.crt /f certificate\certificate.pfx Installer/SbiePlus_x64/SbieDll.dll
+          Set-Date $currentTime
+          Remove-Item -Recurse -Force certificate
+
       - name: Upload installer assets
         uses: actions/upload-artifact@v3
         with:
