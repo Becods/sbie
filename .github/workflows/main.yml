@@ -2,11 +2,12 @@ name: CI
 
 on:
   workflow_dispatch:
-
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+    inputs:
+      branch:
+        description: "Select the branch"
+        required: false
+        default: "master"
+        type: string
 
 jobs:
   Build:
@@ -17,6 +18,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
+          fetch-depth: 1
+          ref: ${{ inputs.branch }}
           repository: sandboxie-plus/Sandboxie
 
       - name: Setup msbuild
@@ -24,7 +27,10 @@ jobs:
 
       - name: Patch
         shell: pwsh
-        run: (Get-Content -Path Sandboxie/core/drv/verify.c -Raw) -replace 'return status;\r?\n}', 'Verify_CertInfo.valid = 1;\r\n\r\n    return 1;\r\n}' | Set-Content -Path Sandboxie/core/drv/verify.c
+        run: |
+          $content = Get-Content -Path "Sandboxie/core/drv/verify.c" -Raw
+          $newContent = $content -replace "return status;`n}", "Verify_CertInfo.valid = 1;`n`nreturn 1;`n}"
+          Set-Content -Path "Sandboxie/core/drv/verify.c" -Value $newContent
 
       - name: Build Sandboxie x86
         run: msbuild /t:build Sandboxie\Sandbox.sln /p:Configuration="SbieRelease" /p:Platform=Win32 -maxcpucount:8
