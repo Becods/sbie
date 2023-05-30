@@ -60,9 +60,6 @@ jobs:
 
       - name: Build Sandboxie-Tools x64
         run: msbuild /t:build SandboxieTools\SandboxieTools.sln /p:Configuration="Release" /p:Platform=x64 -maxcpucount:8
-        
-      - name: Add missing languages for Qt5 x86 (issue 1528)
-        run: Installer\fix_qt5_languages.cmd Win32
 
       - name: Add Windows 7 compatible Qt6 DLLs
         run: Installer\fix_qt6_win7.cmd
