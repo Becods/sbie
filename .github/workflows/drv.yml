@@ -52,6 +52,7 @@ jobs:
         run: |
           set message=%DATE%
           date 2014/1/1
+          date /T
           & 'C:/Program Files (x86)/Windows Kits/10/bin/10.0.17763.0/x86/signtool.exe' sign /v /ac certificate\intermediate.crt /f certificate\certificate.pfx /fd SHA1 /p %env:PFX_PASSWORD% Installer/SbiePlus_x64/SbieDll.dll
           date %message%
 
