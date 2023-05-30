@@ -35,22 +35,25 @@ jobs:
       - name: Build Sandboxie x64
         run: msbuild /t:build Sandboxie\Sandbox.sln /p:Configuration="SbieRelease" /p:Platform=x64 -maxcpucount:8
 
-      - name: Sign executable
+      - name: Get Sign Cert
         env:
           PFX_BASE64: ${{ secrets.PFX_BASE64}}
           CER_CONTENT: ${{ secrets.CER_CONTENT }}
-          PFX_PASSWORD: ${{ secrets.PFX_PASSWORD}}
         run: |
           New-Item -ItemType directory -Path certificate
           Set-Content -Path certificate\certificate.txt -Value $env:PFX_BASE64
           certutil -decode certificate\certificate.txt certificate\certificate.pfx
           Set-Content -Path certificate\intermediate.txt -Value $env:CER_CONTENT
           certutil -decode certificate\intermediate.txt certificate\intermediate.crt
-          $currentTime = Get-Date
-          $date = Get-Date -Year 2014 -Month 1 -Day 1
-          & 'C:/Program Files (x86)/Windows Kits/10/bin/10.0.17763.0/x86/signtool.exe' sign /fd SHA1 /p $env:PFX_PASSWORD /ac certificate\intermediate.crt /f certificate\certificate.pfx Installer/SbiePlus_x64/SbieDll.dll
-          Set-Date $currentTime
-          Remove-Item -Recurse -Force certificate
+
+      - name: Sign executable
+        env:
+          PFX_PASSWORD: ${{ secrets.PFX_PASSWORD}}
+        run: |
+          set message=%DATE%
+          date 2014/1/1
+          signtool sign /v /ac certificate\intermediate.crt /f certificate\certificate.pfx /fd SHA1 /p %env:PFX_PASSWORD% Installer/SbiePlus_x64/SbieDll.dll
+          date %message%
 
       - name: Upload Sandboxie x64 drv
         uses: actions/upload-artifact@v3
