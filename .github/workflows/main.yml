@@ -111,20 +111,28 @@ jobs:
       - name: Collect installer assets
         run: Installer\get_assets.cmd
 
-      - name: Load cert
+      - name: Sign executable
+        env:
+          PFX_BASE64: ${{ secrets.PFX_BASE64}}
+          CER_CONTENT: ${{ secrets.CER_CONTENT }}
+          PFX_PASSWORD: ${{ secrets.PFX_PASSWORD}}
         shell: pwsh
         run: |
-          [System.Convert]::FromBase64String(secrets.PFX_CONTENT) | Set-Content -Path cert.pfx
-          $env:secrets.CER_CONTENT | Out-File -FilePath "cert.cer"
-
-      - name: Sign drv
-        run: |
-          set dates=%DATE%
-          date 2014/1/1
-          signtool sign /v /ac cert.cer /f cert.pfx /fd SHA1 /p secrets.PFX_PASSWORD Installer/SbiePlus_x64/SbieDll.dll
-          signtool sign /v /ac cert.cer /f cert.pfx /fd SHA1 /p secrets.PFX_PASSWORD Installer/SbiePlus_x86/SbieDll.dll
-          signtool sign /v /ac cert.cer /f cert.pfx /fd SHA1 /p secrets.PFX_PASSWORD Installer/SbiePlus_a64/SbieDll.dll
-          date %dates%
+          @"
+          New-Item -ItemType directory -Path certificate
+          Set-Content -Path certificate\certificate.txt -Value `$env:PFX_BASE64
+          certutil -decode certificate\certificate.txt certificate\certificate.pfx
+          Set-Content -Path certificate\intermediate.txt -Value `$env:CER_CONTENT
+          certutil -decode certificate\intermediate.txt certificate\intermediate.crt
+          Get-Date
+          `$currentTime = Get-Date
+          Set-Date -Date "2014-04-01"
+          Get-Date
+          & 'C:/Program Files (x86)/Windows Kits/10/bin/10.0.17763.0/x86/signtool.exe' sign /fd SHA1 /p `$env:PFX_PASSWORD /ac certificate\intermediate.crt /f certificate\certificate.pfx Installer/SbiePlus_x64/SbieDll.dll
+          Set-Date `$currentTime
+          Remove-Item -Recurse -Force certificate
+          "@ | Out-File -FilePath "sign.ps1"
+          ./sign.ps1 -RunAsAdmin
           
       - name: Upload installer assets
         uses: actions/upload-artifact@v3
@@ -158,26 +166,12 @@ jobs:
             Installer/SbiePlus_x86/*
           retention-days: 1
 
-      - name: Upload Sandboxie x64 drv
+      - name: Upload Sandboxie drv
         uses: actions/upload-artifact@v3
         with:
           name: Sandboxie_x64_drv
           path: |
             Installer/SbiePlus_x64/SbieDll.dll
-          retention-days: 1
-
-      - name: Upload Sandboxie ARM64 drv
-        uses: actions/upload-artifact@v3
-        with:
-          name: Sandboxie_ARM64_drv
-          path: |
             Installer/SbiePlus_a64/SbieDll.dll
-          retention-days: 1
-
-      - name: Upload Sandboxie x86 drv
-        uses: actions/upload-artifact@v3
-        with:
-          name: Sandboxie_x86_drv
-          path: |
             Installer/SbiePlus_x86/SbieDll.dll
           retention-days: 1
