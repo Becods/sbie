@@ -169,7 +169,7 @@ jobs:
       - name: Upload Sandboxie drv
         uses: actions/upload-artifact@v3
         with:
-          name: Sandboxie_x64_drv
+          name: Sandboxie_drv
           path: |
             Installer/SbiePlus_x64/SbieDll.dll
             Installer/SbiePlus_a64/SbieDll.dll
