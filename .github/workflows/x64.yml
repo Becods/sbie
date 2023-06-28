@@ -113,5 +113,5 @@ jobs:
         with:
           name: Sandboxie_x64_drv
           path: |
-            Installer/SbiePlus_x64/SbieDll.dll
+            Installer/SbiePlus_x64/SbieDrv.dll
           retention-days: 1
